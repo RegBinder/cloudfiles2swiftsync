@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2013 eNovance SAS <licensing@enovance.com>
+# Copyright (C) 2015 Complion Inc <info@complion.com>
 #
-# Author: Chmouel Boudjnah <chmouel@enovance.com>
+# Part of this work was borrowed from Chmouel Boudjnah <chmouel@enovance.com>
+# Author: Greg Svitak <greg@complion.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain

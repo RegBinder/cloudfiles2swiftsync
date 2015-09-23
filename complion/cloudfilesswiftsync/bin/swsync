@@ -1,10 +1,8 @@
-__author__ = 'gregsvitak'
-
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (C) 2015 Complion Inc <info@complion.com>
+# Copyright (C) 2013 eNovance SAS <licensing@enovance.com>
 #
-# Part of this work was borrowed from Chmouel Boudjnah <chmouel@enovance.com>
-# Author: Greg Svitak <greg@complion.com>
+# Author: Chmouel Boudjnah <chmouel@enovance.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -17,14 +15,12 @@ __author__ = 'gregsvitak'
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-
-
-
 import optparse
 import sys
 
-import complion.cloudfilesswiftsync.accounts
-import complion.cloudfilesswiftsync.utils
+import swsync.accounts
+import swsync.utils
+
 
 class Main(object):
     def __init__(self):
@@ -46,20 +42,20 @@ class Main(object):
             help='Traverse container list forward or reversed')
         self.options, args = parser.parse_args()
         if self.options:
-            complion.cloudfilesswiftsync.utils.REVERSE = self.options.reverse
+            swsync.utils.REVERSE = self.options.reverse
         if args:
-            conf = complion.cloudfilesswiftsync.utils.parse_ini(args[0])
+            conf = swsync.utils.parse_ini(args[0])
         else:
             try:
-                conf = complion.cloudfilesswiftsync.utils.parse_ini()
-            except(complion.cloudfilesswiftsync.utils.ConfigurationError):
+                conf = swsync.utils.parse_ini()
+            except(swsync.utils.ConfigurationError):
                 parser.print_help()
                 sys.exit(1)
 
-        complion.cloudfilesswiftsync.utils.set_logging(self.options.log_level.lower())
+        swsync.utils.set_logging(self.options.log_level.lower())
         #beurk
-        complion.cloudfilesswiftsync.utils.CONFIG = conf
-        complion.cloudfilesswiftsync.accounts.main()
+        swsync.utils.CONFIG = conf
+        swsync.accounts.main()
 
 if __name__ == '__main__':
     m = Main()

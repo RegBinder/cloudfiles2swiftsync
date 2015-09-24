@@ -82,15 +82,17 @@ class Containers(object):
 
         try:
             container_headers = orig_container.get_metadata()
-            marker = ""
-            objs = orig_container.get_objects(limit=100, marker=marker)
             orig_container_headers = orig_container.get_metadata()
-            orig_objects = []
-            for obj in objs:
-                while objs:
-                    marker = objs[-1].name
-                    orig_objects.append(obj)
-                    objs = orig_container.get_objects(limit=100, marker=marker)
+            orig_objects = orig_container.get_objects(full_listing=True)
+            #marker = ""
+            #objs = orig_container.get_objects(limit=100, marker=marker)
+            # orig_container_headers = orig_container.get_metadata()
+            # orig_objects = []
+            # for obj in objs:
+            #     while objs:
+            #         marker = obj.name
+            #         orig_objects.append(obj)
+            #         objs = orig_container.get_objects(limit=100, marker=marker)
         except(swiftclient.client.ClientException), e:
             logging.info("ERROR: getting container: %s, %s" % (
                 orig_container.name, e.http_reason))

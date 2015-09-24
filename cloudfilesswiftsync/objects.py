@@ -41,10 +41,11 @@ def quote(value, safe='/'):
     return urllib.quote(value, safe)
 
 
-def get_object(orig_container,
-               object_name,
-               response_timeout=15,
-               resp_chunk_size=65536):
+def get_object(
+               orig_container,
+               object_name):
+
+    response_timeout = 15
 
     with eventlet.Timeout(response_timeout):
         resp_headers, obj = orig_container.fetch_object(object_name, include_meta=True)
@@ -66,12 +67,11 @@ def delete_object(dest_cnx,
 
 
 def sync_object(orig_storage_cnx, orig_container, dest_storage_url,
-                dest_token, container_name, object_name_etag):
-    object_name = object_name_etag[1]
+                dest_token, container_name, obj):
 
-    orig_headers, orig_body = get_object(orig_storage_cnx,
-                                         orig_container,
-                                         container_name,
+    object_name = obj.name
+
+    orig_headers, orig_body = get_object(orig_container,
                                          object_name)
     container_name = quote(container_name)
 

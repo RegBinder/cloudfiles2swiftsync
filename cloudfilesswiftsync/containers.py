@@ -174,11 +174,11 @@ class Containers(object):
                 # We don't pass on because since the server was busy
                 # let's pass it on for the next pass
                 return
+        set1 = set((x._info['last_modified'], x.name) for x in orig_objects)
 
-        set1 = set((x.get_metadata()['last_modified'], x.name) for x in orig_objects)
         set2 = set((x['last_modified'], x['name']) for x in dest_objects)
         diff = set1 - set2
-        set1 = set(x['name'] for x in orig_objects)
+        set1 = set(x.name for x in orig_objects)
         set2 = set(x['name'] for x in dest_objects)
         delete_diff = set2 - set1
 
@@ -188,8 +188,8 @@ class Containers(object):
         pool = eventlet.GreenPool(size=self.concurrency)
         pile = eventlet.GreenPile(pool)
 
-        for obj in diff:
-            logging.info("sending: %s ts:%s", obj[1], obj[0])
+        for obj in orig_objects:
+            logging.info("sending: %s ts:%s", obj.container, obj.name)
             pile.spawn(self.sync_object,
                        orig_storage_cnx,
                        orig_container,
@@ -197,11 +197,11 @@ class Containers(object):
                        dest_token, orig_container.name,
                        obj)
 
-        for obj in delete_diff:
-            logging.info("deleting: %s ts:%s", obj[1], obj[0])
-            pile.spawn(self.delete_object,
-                       dest_storage_cnx,
-                       dest_token,
-                       orig_container.name,
-                       obj)
+        # for obj in delete_diff:
+        #     logging.info("deleting: %s ts:%s", obj[1], obj[0])
+        #     pile.spawn(self.delete_object,
+        #                dest_storage_cnx,
+        #                dest_token,
+        #                orig_container.name,
+        #                obj)
         pool.waitall()

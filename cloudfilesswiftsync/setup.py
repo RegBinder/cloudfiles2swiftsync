@@ -30,7 +30,7 @@ entry_point = '%s.middlewares:last_modified' % (name)
 
 setuptools.setup(
     name=name,
-    version=setup.get_version(name),
+    version='0.0.1',
     description='A sync objects from Rackspace Cloud Files to a Swift cluster',
     url='https://github.com/RegBinder/cloudfiles2swiftsync',
     license='Apache License (2.0)',

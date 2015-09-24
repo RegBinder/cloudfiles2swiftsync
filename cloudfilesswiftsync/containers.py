@@ -85,11 +85,11 @@ class Containers(object):
             marker = ""
             objs = orig_container.get_objects(limit=100, marker=marker)
             orig_container_headers = orig_container.get_metadata()
-            orig_objects = {}
+            orig_objects = []
             for obj in objs:
                 while objs:
                     marker = objs[-1].name
-                    orig_objects['name'] = obj.name
+                    orig_objects.append(obj)
                     objs = orig_container.get_objects(limit=100, marker=marker)
         except(swiftclient.client.ClientException), e:
             logging.info("ERROR: getting container: %s, %s" % (
@@ -175,7 +175,7 @@ class Containers(object):
                 # let's pass it on for the next pass
                 return
 
-        set1 = set((x['last_modified'], x['name']) for x in orig_objects)
+        set1 = set((x.get_metadata()['last_modified'], x.name) for x in orig_objects)
         set2 = set((x['last_modified'], x['name']) for x in dest_objects)
         diff = set1 - set2
         set1 = set(x['name'] for x in orig_objects)

@@ -18,24 +18,25 @@
 
 import setuptools
 
-from cloudfilesswiftsync.openstack import setup
+from cloudfilesswiftsync import openstack
 
 name = 'cloudfilesswiftsync'
 
-requires = setup.parse_requirements()
-depend_links = setup.parse_dependency_links()
+requires = openstack.setup.parse_requirements()
+depend_links = openstack.setup.parse_dependency_links()
 entry_point = '%s.middlewares:last_modified' % (name)
+
 
 setuptools.setup(
     name=name,
-    version=setup.get_version(name),
+    version=openstack.setup.get_version(name),
     description='A sync objects from Rackspace Cloud Files to a Swift cluster',
-    url='https://github.com/enovance/swsync',
+    url='https://github.com/RegBinder/cloudfiles2swiftsync',
     license='Apache License (2.0)',
     author='Complion Inc',
     author_email='info@complion.com',
     packages=setuptools.find_packages(exclude=['tests', 'tests.*']),
-    cmdclass=setup.get_cmdclass(),
+    cmdclass=openstack.setup.get_cmdclass(),
     install_requires=requires,
     dependency_links=depend_links,
     classifiers=[
@@ -50,7 +51,7 @@ setuptools.setup(
         'Environment :: No Input/Output (Daemon)',
     ],
     scripts=[
-        'bin/swsync',
+        'bin/cloudfilesswiftsyncer',
     ],
     entry_points={
         'paste.filter_factory': ['last_modified=%s' % entry_point]

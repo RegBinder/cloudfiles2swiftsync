@@ -18,25 +18,26 @@
 
 import setuptools
 
-from cloudfilesswiftsync import openstack
+from cloudfilesswiftsync.openstack.common import setup
 
 name = 'cloudfilesswiftsync'
 
-requires = openstack.setup.parse_requirements()
-depend_links = openstack.setup.parse_dependency_links()
+
+requires = setup.parse_requirements()
+depend_links = setup.parse_dependency_links()
 entry_point = '%s.middlewares:last_modified' % (name)
 
 
 setuptools.setup(
     name=name,
-    version=openstack.setup.get_version(name),
+    version=setup.get_version(name),
     description='A sync objects from Rackspace Cloud Files to a Swift cluster',
     url='https://github.com/RegBinder/cloudfiles2swiftsync',
     license='Apache License (2.0)',
     author='Complion Inc',
     author_email='info@complion.com',
     packages=setuptools.find_packages(exclude=['tests', 'tests.*']),
-    cmdclass=openstack.setup.get_cmdclass(),
+    cmdclass=setup.get_cmdclass(),
     install_requires=requires,
     dependency_links=depend_links,
     classifiers=[

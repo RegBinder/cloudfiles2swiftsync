@@ -16,6 +16,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 import logging
+import collections
 
 import eventlet
 import swiftclient
@@ -176,9 +177,10 @@ class Containers(object):
                 # We don't pass on because since the server was busy
                 # let's pass it on for the next pass
                 return
-        set1 = set((x._info['last_modified'], x.name) for x in orig_objects)
+        StorageObj = collections.namedtuple('Object', 'last_modified name')
+        set1 = set(StorageObj(last_modified=x._info['last_modified'], name=x.name) for x in orig_objects)
 
-        set2 = set((x['last_modified'], x['name']) for x in dest_objects)
+        set2 = set((StorageObj(last_modified=x['last_modified'], name=x['name'])) for x in dest_objects)
         diff = set1 - set2
         set1 = set(x.name for x in orig_objects)
         set2 = set(x['name'] for x in dest_objects)
@@ -190,8 +192,8 @@ class Containers(object):
         pool = eventlet.GreenPool(size=self.concurrency)
         pile = eventlet.GreenPile(pool)
 
-        for obj in orig_objects:
-            logging.info("sending: %s ts:%s", obj.container, obj.name)
+        for obj in diff:
+            logging.info("sending: %s ts:%s", orig_container.name, obj.name)
             pile.spawn(self.sync_object,
                        orig_storage_cnx,
                        orig_container,

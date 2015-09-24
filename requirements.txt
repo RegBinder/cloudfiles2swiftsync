@@ -47,7 +47,7 @@ requests==2.7.0
 simplejson==3.8.0
 six==1.9.0
 stevedore==1.8.0
-swift==2.4.1.dev46
+-e http://tarballs.openstack.org/swift/swift-master.tar.gz#egg=swift
 wheel==0.24.0
 wrapt==1.10.5
 xattr==0.7.8

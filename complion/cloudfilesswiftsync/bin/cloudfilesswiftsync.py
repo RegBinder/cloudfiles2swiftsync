@@ -57,7 +57,6 @@ class Main(object):
                 sys.exit(1)
 
         complion.cloudfilesswiftsync.utils.set_logging(self.options.log_level.lower())
-        #beurk
         complion.cloudfilesswiftsync.utils.CONFIG = conf
         complion.cloudfilesswiftsync.accounts.main()
 

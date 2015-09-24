@@ -25,7 +25,8 @@ __author__ = 'gregsvitak'
 import optparse
 import sys
 
-import cloudfilesswiftsync
+import cloudfilesswiftsync.utils
+import cloudfilesswiftsync.accounts
 
 
 class Main(object):
@@ -59,7 +60,7 @@ class Main(object):
                 sys.exit(1)
 
         cloudfilesswiftsync.utils.set_logging(self.options.log_level.lower())
-        cloudfilesswiftsync.CONFIG = conf
+        cloudfilesswiftsync.utils.CONFIG = conf
         cloudfilesswiftsync.accounts.main()
 
 if __name__ == '__main__':

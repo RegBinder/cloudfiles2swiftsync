@@ -19,18 +19,20 @@ import logging
 
 import eventlet
 import swiftclient
+import cloudfilesswiftsync
 
-import cloudfilesswiftsync as swsync
+from cloudfilesswiftsync import utils
+from cloudfilesswiftsync import objects
 
 
 class Containers(object):
     """Containers sync."""
     def __init__(self):
-        self.concurrency = int(swsync.utils.get_config(
+        self.concurrency = int(utils.get_config(
                                "concurrency",
                                "sync_swift_client_concurrency"))
-        self.sync_object = swsync.objects.sync_object
-        self.delete_object = swsync.objects.delete_object
+        self.sync_object = cloudfilesswiftsync.objects.sync_object
+        self.delete_object = cloudfilesswiftsync.objects.delete_object
 
     def delete_container(self, dest_storage_cnx, dest_token,
                          orig_containers,
@@ -75,27 +77,33 @@ class Containers(object):
                 ret[key] = value
         return ret
 
-    def sync(self, orig_storage_cnx, orig_storage_url,
-             orig_token, dest_storage_cnx, dest_storage_url, dest_token,
-             container_name):
+    def sync(self, orig_storage_cnx, dest_storage_cnx, dest_storage_url, dest_token,
+             orig_container):
 
         try:
-            orig_container_headers, orig_objects = swiftclient.get_container(
-                None, orig_token, container_name, http_conn=orig_storage_cnx,
-                full_listing=True,
-            )
+            container_headers = orig_container.get_metadata()
+            marker = ""
+            objs = orig_container.get_objects(limit=100, marker=marker)
+            orig_container_headers = orig_container.get_metadata()
+            orig_objects = {}
+            for obj in objs:
+                while objs:
+                    marker = objs[-1].name
+                    orig_objects['name'] = obj.name
+                    objs = orig_container.get_objects(limit=100, marker=marker)
         except(swiftclient.client.ClientException), e:
             logging.info("ERROR: getting container: %s, %s" % (
-                container_name, e.http_reason))
+                orig_container.name, e.http_reason))
             return
 
         try:
             # Check that the container exists on dest
             swiftclient.head_container(
-                "", dest_token, container_name, http_conn=dest_storage_cnx
+                "", dest_token, orig_container.name,  http_conn=dest_storage_cnx
             )
         except(swiftclient.client.ClientException), e:
-            container_headers = orig_container_headers.copy()
+
+            orig_container_headers = container_headers
             for h in ('x-container-object-count', 'x-trans-id',
                       'x-container-bytes-used'):
                 try:
@@ -107,26 +115,26 @@ class Containers(object):
             url = "%s://%s%s" % (p.scheme, p.netloc, p.path)
             try:
                 swiftclient.put_container(url,
-                                          dest_token, container_name,
+                                          dest_token, orig_container.name,
                                           headers=container_headers)
             except(swiftclient.client.ClientException), e:
                 logging.info("ERROR: creating container: %s, %s" % (
-                    container_name, e.http_reason))
+                    orig_container.name, e.http_reason))
                 return
 
         try:
             dest_container_headers, dest_objects = swiftclient.get_container(
-                None, dest_token, container_name, http_conn=dest_storage_cnx,
+                dest_storage_url, dest_token, orig_container.name, http_conn=dest_storage_cnx,
                 full_listing=True,
             )
         except(swiftclient.client.ClientException), e:
             logging.info("ERROR: creating container: %s, %s" % (
-                container_name, e.http_reason))
+                orig_container.name, e.http_reason))
             return
 
         try:
             header_key = 'x-container-meta-last-modified'
-            orig_ts = float(orig_container_headers[header_key])
+            orig_ts = float(container_headers[header_key])
             dest_ts = float(dest_container_headers[header_key])
             if orig_ts < dest_ts:
                 logging.info("Dest is up-to-date")
@@ -138,10 +146,10 @@ class Containers(object):
             logging.error("Could not decode last-modified header!")
 
         do_headers = False
-        if len(dest_container_headers) != len(orig_container_headers):
+        if len(dest_container_headers) != len(container_headers):
             do_headers = True
         else:
-            for k, v in orig_container_headers.iteritems():
+            for k, v in container_headers.iteritems():
                 if (k.startswith('x-container-meta') and
                         k in dest_container_headers):
                     if dest_container_headers[k] != v:
@@ -156,13 +164,13 @@ class Containers(object):
                                orig_metadata_headers.items())
             try:
                 swiftclient.post_container(
-                    "", dest_token, container_name, new_headers,
+                    "", dest_token, orig_container.name, new_headers,
                     http_conn=dest_storage_cnx,
                 )
-                logging.info("HEADER: sync headers: %s" % (container_name))
+                logging.info("HEADER: sync headers: %s" % (orig_container.name))
             except(swiftclient.client.ClientException), e:
                 logging.info("ERROR: updating container metadata: %s, %s" % (
-                    container_name, e.http_reason))
+                    orig_container.name, e.http_reason))
                 # We don't pass on because since the server was busy
                 # let's pass it on for the next pass
                 return
@@ -183,10 +191,10 @@ class Containers(object):
         for obj in diff:
             logging.info("sending: %s ts:%s", obj[1], obj[0])
             pile.spawn(self.sync_object,
-                       orig_storage_url,
-                       orig_token,
+                       orig_storage_cnx,
+                       orig_container,
                        dest_storage_url,
-                       dest_token, container_name,
+                       dest_token, orig_container.name,
                        obj)
 
         for obj in delete_diff:
@@ -194,6 +202,6 @@ class Containers(object):
             pile.spawn(self.delete_object,
                        dest_storage_cnx,
                        dest_token,
-                       container_name,
+                       orig_container.name,
                        obj)
         pool.waitall()

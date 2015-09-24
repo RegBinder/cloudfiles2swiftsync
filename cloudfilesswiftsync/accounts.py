@@ -22,15 +22,17 @@ import dateutil.relativedelta
 import swiftclient
 import pyrax
 
-import cloudfilesswiftsync as swsync
-from cloudfilesswiftsync import get_config
+import cloudfilesswiftsync
 
+from cloudfilesswiftsync import containers
+from cloudfilesswiftsync.utils import get_config
+from cloudfilesswiftsync.utils import ConfigurationError
 
 class Accounts(object):
     """Process Keystone Accounts."""
     def __init__(self):
         self.keystone_cnx = None
-        self.container_cls = swsync.containers.Containers()
+        self.container_cls = containers.Containers()
 
     def get_swift_auth(self, auth_url, tenant, user, password):
         """Get swift connexion from args."""
@@ -47,20 +49,17 @@ class Accounts(object):
 
         pyrax.set_setting('identity_type',  'rackspace')
 
-        pyrax.set_credentials(username,apikey,region)
+        pyrax.set_credentials(username=username,api_key=apikey,region=region)
 
         return pyrax
 
     def sync_account(self):
         """Sync a single account with url/tok to dest_url/dest_tok."""
 
-        import pydevd
-        pydevd.settrace('localhost', port=53100, stdoutToServer=True, stderrToServer=True)
-
         orig_storage_cnx = self.get_cloudfiles_auth_orig()
         dest_auth_url = get_config('auth', 'keystone_dest')
 
-        cfg = get_config('auth', 'keystone_dest')
+        cfg = get_config('auth', 'keystone_dest_credentials')
         (orig_user, orig_password, orig_tenant) = cfg.split(':')
 
         dest_storage_url = get_config('auth', 'dest_storage_url')
@@ -72,7 +71,7 @@ class Accounts(object):
         dest_storage_cnx = swiftclient.http_connection(dest_storage_url)
 
         try:
-            orig_containers = orig_storage_cnx.cloudfiles.list_containers()
+            orig_containers = orig_storage_cnx.cloudfiles.get_all_containers()
             dest_account_headers, dest_containers = (
                 swiftclient.get_account(None, dest_token,
                                         http_conn=dest_storage_cnx,
@@ -82,24 +81,20 @@ class Accounts(object):
                      e.http_reason))
                 return
 
-        container_list = iter(orig_containers)
-        if cloudfilesswiftsync.utils.REVERSE:
-            container_list = reversed(orig_containers)
-
-        for container in container_list:
+        for container in orig_containers:
             logging.info("Syncronizing container %s: %s",
-                         container['name'], container)
+                         container.name, container)
             dt1 = datetime.datetime.fromtimestamp(time.time())
-            self.container_cls.sync(orig_storage_cnx,
-                                    dest_storage_cnx,
-                                    dest_storage_url, dest_token,
-                                    container['name'])
+            self.container_cls.sync(orig_storage_cnx=orig_storage_cnx,
+                                    dest_storage_cnx=dest_storage_cnx,
+                                    dest_storage_url=dest_storage_url, dest_token=dest_token,
+                                    orig_container=container)
 
             dt2 = datetime.datetime.fromtimestamp(time.time())
             rd = dateutil.relativedelta.relativedelta(dt2, dt1)
             # TODO(chmou): use logging
             logging.info("%s done: %d hours, %d minutes and %d seconds",
-                         container['name'],
+                         container.name,
                          rd.hours,
                          rd.minutes, rd.seconds)
 

@@ -41,50 +41,15 @@ def quote(value, safe='/'):
     return urllib.quote(value, safe)
 
 
-def get_object(storage_url, token,
-               container_name,
+def get_object(orig_container,
                object_name,
                response_timeout=15,
-               conn_timeout=5,
                resp_chunk_size=65536):
-    headers = {'x-auth-token': token}
-    x = urllib2.urlparse.urlparse(storage_url)
-
-    path = x.path + '/' + container_name + '/' + object_name
-    path = quote(path)
-    with eventlet.Timeout(conn_timeout):
-        conn = swift.common.bufferedhttp.http_connect_raw(
-            x.hostname,
-            x.port,
-            'GET',
-            path,
-            headers=headers,
-            ssl=False)
 
     with eventlet.Timeout(response_timeout):
-        resp = conn.getresponse()
+        resp_headers, obj = orig_container.fetch_object(object_name, include_meta=True)
 
-    if not swift.common.http.is_success(resp.status):
-        resp.read()
-        # TODO(chmou): logging
-        raise swiftclient.ClientException(
-            'status %s %s' % (resp.status, resp.reason))
-
-    if resp_chunk_size:
-        def _object_body():
-            buf = resp.read(resp_chunk_size)
-            while buf:
-                yield buf
-                buf = resp.read(resp_chunk_size)
-        object_body = _object_body()
-    else:
-        object_body = resp.read()
-
-    resp_headers = {}
-    for header, value in resp.getheaders():
-        resp_headers[header.lower()] = value
-
-    return (resp_headers, object_body)
+    return (resp_headers, obj)
 
 
 def delete_object(dest_cnx,
@@ -100,12 +65,12 @@ def delete_object(dest_cnx,
                               name=object_name)
 
 
-def sync_object(orig_storage_url, orig_token, dest_storage_url,
+def sync_object(orig_storage_cnx, orig_container, dest_storage_url,
                 dest_token, container_name, object_name_etag):
     object_name = object_name_etag[1]
 
-    orig_headers, orig_body = get_object(orig_storage_url,
-                                         orig_token,
+    orig_headers, orig_body = get_object(orig_storage_cnx,
+                                         orig_container,
                                          container_name,
                                          object_name)
     container_name = quote(container_name)

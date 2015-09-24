@@ -1,3 +1,5 @@
+
+
 __author__ = 'gregsvitak'
 
 # -*- coding: utf-8 -*-
@@ -23,8 +25,8 @@ __author__ = 'gregsvitak'
 import optparse
 import sys
 
-import complion.cloudfilesswiftsync.accounts
-import complion.cloudfilesswiftsync.utils
+import cloudfilesswiftsync
+
 
 class Main(object):
     def __init__(self):
@@ -37,7 +39,7 @@ class Main(object):
             '-l', '--log-level',
             dest='log_level',
             default='info',
-            help='Number of containers to distribute objects among')
+            help='Log Level - default info')
         parser.add_option(
             '-R', '--reverse',
             action="store_true",
@@ -46,19 +48,19 @@ class Main(object):
             help='Traverse container list forward or reversed')
         self.options, args = parser.parse_args()
         if self.options:
-            complion.cloudfilesswiftsync.utils.REVERSE = self.options.reverse
+            cloudfilesswiftsync.utils.REVERSE = self.options.reverse
         if args:
-            conf = complion.cloudfilesswiftsync.utils.parse_ini(args[0])
+            conf = cloudfilesswiftsync.utils.parse_ini(args[0])
         else:
             try:
-                conf = complion.cloudfilesswiftsync.utils.parse_ini()
-            except(complion.cloudfilesswiftsync.utils.ConfigurationError):
+                conf = cloudfilesswiftsync.utils.parse_ini()
+            except(cloudfilesswiftsync.utils.ConfigurationError):
                 parser.print_help()
                 sys.exit(1)
 
-        complion.cloudfilesswiftsync.utils.set_logging(self.options.log_level.lower())
-        complion.cloudfilesswiftsync.utils.CONFIG = conf
-        complion.cloudfilesswiftsync.accounts.main()
+        cloudfilesswiftsync.utils.set_logging(self.options.log_level.lower())
+        cloudfilesswiftsync.CONFIG = conf
+        cloudfilesswiftsync.accounts.main()
 
 if __name__ == '__main__':
     m = Main()

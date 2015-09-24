@@ -20,7 +20,7 @@ import logging
 import eventlet
 import swiftclient
 
-import complion.cloudfilesswiftsync as swsync
+import cloudfilesswiftsync as swsync
 
 
 class Containers(object):

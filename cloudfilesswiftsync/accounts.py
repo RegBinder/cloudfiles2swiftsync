@@ -16,18 +16,14 @@
 # under the License.
 import datetime
 import logging
-import os
 import time
 
 import dateutil.relativedelta
-import keystoneclient.v2_0.client
 import swiftclient
-
-import complion.cloudfilesswiftsync as swsync
-from complion.cloudfilesswiftsync.utils import ConfigurationError
-from complion.cloudfilesswiftsync.utils import get_config
-
 import pyrax
+
+import cloudfilesswiftsync as swsync
+from cloudfilesswiftsync import get_config
 
 
 class Accounts(object):
@@ -57,6 +53,10 @@ class Accounts(object):
 
     def sync_account(self):
         """Sync a single account with url/tok to dest_url/dest_tok."""
+
+        import pydevd
+        pydevd.settrace('localhost', port=53100, stdoutToServer=True, stderrToServer=True)
+
         orig_storage_cnx = self.get_cloudfiles_auth_orig()
         dest_auth_url = get_config('auth', 'keystone_dest')
 
@@ -83,7 +83,7 @@ class Accounts(object):
                 return
 
         container_list = iter(orig_containers)
-        if swsync.utils.REVERSE:
+        if cloudfilesswiftsync.utils.REVERSE:
             container_list = reversed(orig_containers)
 
         for container in container_list:

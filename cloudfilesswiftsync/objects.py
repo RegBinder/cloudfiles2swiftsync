@@ -18,11 +18,14 @@
 
 import logging
 import urllib
+import psycopg2.extras
+import textwrap
 import urllib2
 
 import eventlet
 import swift.common.bufferedhttp
 import swift.common.http
+
 try:
     from swift.container.sync import _Iter2FileLikeObject as FileLikeIter
 except ImportError:
@@ -42,9 +45,8 @@ def quote(value, safe='/'):
 
 
 def get_object(
-               orig_container,
-               object_name):
-
+        orig_container,
+        object_name):
     response_timeout = 15
 
     with eventlet.Timeout(response_timeout):
@@ -67,8 +69,7 @@ def delete_object(dest_cnx,
 
 
 def sync_object(orig_storage_cnx, orig_container, dest_storage_url,
-                dest_token, container_name, obj):
-
+                dest_token, container_name, obj, postges_connection):
     object_name = obj.name
 
     orig_headers, orig_body = get_object(orig_container,
@@ -82,6 +83,41 @@ def sync_object(orig_storage_cnx, orig_container, dest_storage_url,
         swiftclient.put_object(sync_to, name=object_name,
                                headers=post_headers,
                                contents=FileLikeIter(orig_body))
+        cursor = postges_connection.cursor()
+
+        cursor.execute(textwrap.dedent("""
+            insert into synced_objects
+            (container_name, object_name)
+            values
+            (
+                %(container_name)s,
+                %(object_name)s
+                )
+
+            """),
+           {'container_name': container_name, 'object_name': object_name})
+        postges_connection.commit()
+
     except(swiftclient.ClientException), e:
         logging.info("error sync object: %s, %s" % (
-                     object_name, e.http_reason))
+            object_name, e.http_reason))
+
+        cursor = postges_connection.cursor()
+
+        cursor.execute(textwrap.dedent("""
+            insert into error_objects
+            (container_name, object_name, error_message)
+            values
+            (
+                %(container_name)s,
+                %(object_name)s,
+                %(error_message)s
+            )
+
+            """),
+                       {'container_name': container_name,
+                        'object_name': object_name,
+                        'error_message': "error sync object: %s, %s" % (
+                            object_name, e.http_reason)
+                        })
+        postges_connection.commit()

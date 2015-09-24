@@ -19,11 +19,13 @@ import logging
 import collections
 
 import eventlet
+import psycopg2
 import swiftclient
 import cloudfilesswiftsync
 
 from cloudfilesswiftsync import utils
 from cloudfilesswiftsync import objects
+from cloudfilesswiftsync.utils import get_config
 
 
 class Containers(object):
@@ -34,6 +36,9 @@ class Containers(object):
                                "sync_swift_client_concurrency"))
         self.sync_object = cloudfilesswiftsync.objects.sync_object
         self.delete_object = cloudfilesswiftsync.objects.delete_object
+        cfg = get_config('database_logging', 'postgres_connection_string')
+        (db,user,host,password) = cfg.split(':')
+        self.postges_connection = psycopg2.connect('{0} {1} {2} {3}'.format(db,user,host,password))
 
     def delete_container(self, dest_storage_cnx, dest_token,
                          orig_containers,
@@ -199,7 +204,8 @@ class Containers(object):
                        orig_container,
                        dest_storage_url,
                        dest_token, orig_container.name,
-                       obj)
+                       obj,
+                       self.postges_connection)
 
         # for obj in delete_diff:
         #     logging.info("deleting: %s ts:%s", obj[1], obj[0])

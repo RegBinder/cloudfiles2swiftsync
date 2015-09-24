@@ -29,6 +29,7 @@ oslo.utils==2.5.0
 PasteDeploy==1.5.2
 pbr==1.8.0
 prettytable==0.7.2
+psycopg2==2.5
 pyasn1==0.1.8
 pycparser==2.14
 PyECLib==1.0.7
